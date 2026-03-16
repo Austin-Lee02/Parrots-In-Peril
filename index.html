@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Parrots in Peril — Toronto Zoo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root { --jungle:#0f2318; --yellow:#ffd93d; --orange:#ff6b35; --green:#4ade80; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Nunito',sans-serif; background:var(--jungle); min-height:100vh; overflow:hidden; }
+    body::before { content:''; position:fixed; inset:0;
+      background: radial-gradient(ellipse at 15% 40%,rgba(34,90,52,.5) 0%,transparent 55%),
+                  radial-gradient(ellipse at 85% 70%,rgba(20,70,40,.4) 0%,transparent 50%);
+      pointer-events:none; }
+
+    #bar { position:fixed; top:0; left:0; height:5px;
+      background:linear-gradient(90deg,var(--yellow),var(--orange));
+      transition:width .5s; z-index:200; border-radius:0 5px 5px 0; width:0; }
+
+    .screen { position:fixed; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; padding:20px;
+      opacity:0; transform:translateX(60px); transition:all .4s ease; pointer-events:none; }
+    .screen.active { opacity:1; transform:translateX(0); pointer-events:all; }
+
+    /* WELCOME */
+    #welcome { text-align:center; }
+    .birds { font-size:clamp(3.5rem,12vw,6rem); animation:flock 4s ease-in-out infinite; display:block; margin-bottom:6px; }
+    @keyframes flock { 0%,100%{transform:rotate(-4deg) translateY(0);} 25%{transform:rotate(2deg) translateY(-12px);} 50%{transform:rotate(-2deg) translateY(-6px);} 75%{transform:rotate(3deg) translateY(-14px);} }
+    .eyebrow { font-size:.8rem; text-transform:uppercase; letter-spacing:3px; color:var(--green); font-weight:800; margin-bottom:10px; }
+    .wtitle { font-family:'Fredoka One',cursive; font-size:clamp(2.8rem,10vw,5.5rem); color:var(--yellow); text-shadow:3px 3px 0 #c45200,6px 6px 0 rgba(0,0,0,.25); line-height:1.05; margin-bottom:16px; }
+    .wsub { color:rgba(255,255,255,.75); font-size:clamp(.95rem,2.5vw,1.15rem); max-width:440px; line-height:1.6; margin-bottom:28px; }
+    .chip { display:inline-flex; gap:7px; align-items:center; background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.18); border-radius:50px; padding:7px 18px; color:rgba(255,255,255,.8); font-size:.82rem; font-weight:700; margin-bottom:32px; }
+    .btn-start { background:linear-gradient(135deg,var(--yellow),var(--orange)); color:#1a0a00; border:none; border-radius:50px; padding:18px 52px; font-family:'Fredoka One',cursive; font-size:clamp(1.2rem,4vw,1.6rem); cursor:pointer; box-shadow:0 6px 0 #a33800,0 10px 30px rgba(255,107,53,.35); transition:all .15s; }
+    .btn-start:hover { transform:translateY(-3px); box-shadow:0 9px 0 #a33800; }
+    .btn-start:active { transform:translateY(4px); box-shadow:0 2px 0 #a33800; }
+
+    /* SPECIES */
+    #species { justify-content:flex-start; padding-top:55px; }
+    .scroll { width:100%; max-width:560px; overflow-y:auto; max-height:calc(100vh - 120px); scrollbar-width:none; padding-bottom:10px; }
+    .scroll::-webkit-scrollbar { display:none; }
+    .card { display:none; flex-direction:column; gap:14px; animation:cardIn .35s ease both; }
+    .card.active { display:flex; }
+    @keyframes cardIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+
+    .chead { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .spname { font-family:'Fredoka One',cursive; font-size:clamp(1.4rem,5vw,2rem); color:white; line-height:1.1; }
+    .sciname { font-style:italic; color:rgba(255,255,255,.45); font-size:.8rem; margin-top:3px; }
+    .zootag { display:inline-flex; gap:5px; align-items:center; margin-top:8px; background:rgba(255,217,61,.18); border:1.5px solid rgba(255,217,61,.45); color:var(--yellow); border-radius:50px; padding:4px 12px; font-size:.75rem; font-weight:800; }
+    .badge { flex-shrink:0; padding:7px 14px; border-radius:50px; font-weight:900; font-size:.68rem; text-transform:uppercase; letter-spacing:.8px; text-align:center; max-width:130px; }
+    .crit { background:#dc2626; color:white; animation:pulse 2s ease-in-out infinite; }
+    .end  { background:linear-gradient(135deg,#ea580c,#d97706); color:white; }
+    .ext  { background:linear-gradient(135deg,#7c3aed,#4338ca); color:white; animation:pulse 2.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.5);} 50%{box-shadow:0 0 0 10px rgba(220,38,38,0);} }
+
+    .imgwrap { width:100%; height:clamp(260px,50vw,380px); border-radius:20px; overflow:hidden; }
+    .simg { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+    .icredit { font-size:.65rem; color:rgba(255,255,255,.4); text-align:right; padding:2px 4px 0; }
+
+    /* GUESSING GAME */
+    .guess-wrap { display:flex; flex-direction:column; gap:10px; }
+    .guess-row { display:flex; gap:10px; }
+    .guess-opt { flex:1; border-radius:16px; overflow:hidden; cursor:pointer; border:3px solid transparent; transition:all .2s; position:relative; height:clamp(180px,38vw,260px); }
+    .guess-opt img { width:100%; height:100%; object-fit:cover; display:block; }
+    .guess-opt:hover { border-color:var(--yellow); transform:scale(1.02); }
+    .guess-opt.correct { border-color:var(--green); }
+    .guess-opt.wrong   { border-color:#dc2626; opacity:.6; }
+    .guess-prompt { text-align:center; color:rgba(255,255,255,.8); font-size:.95rem; font-weight:800; padding:4px 0; }
+    .guess-reveal { text-align:center; padding:10px 14px; border-radius:14px; font-weight:700; font-size:.9rem; display:none; }
+    .guess-reveal.correct { background:rgba(74,222,128,.15); border:1px solid rgba(74,222,128,.3); color:var(--green); display:block; }
+    .guess-reveal.wrong   { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); color:#fca5a5; display:block; }
+
+    .factbox { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.13); border-radius:18px; padding:16px 18px; }
+    .blabel { font-size:.65rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--green); font-weight:900; margin-bottom:7px; }
+    .btext { color:rgba(255,255,255,.92); font-size:clamp(.9rem,2.5vw,1rem); line-height:1.55; font-weight:600; }
+
+    .threat { display:flex; gap:12px; align-items:flex-start; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25); border-radius:14px; padding:13px 16px; }
+    .ti { font-size:1.4rem; flex-shrink:0; margin-top:1px; }
+    .tl { font-size:.65rem; text-transform:uppercase; letter-spacing:1.2px; color:#f87171; font-weight:900; margin-bottom:3px; }
+    .tt { color:#fca5a5; font-size:.88rem; font-weight:600; line-height:1.45; }
+
+    .btnsnd { width:100%; background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.2); border-radius:16px; padding:15px 20px; color:white; font-family:'Nunito',sans-serif; font-size:1rem; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:all .2s; }
+    .btnsnd:hover { background:rgba(255,255,255,.15); }
+    .btnsnd.playing { background:rgba(74,222,128,.2); border-color:var(--green); color:var(--green); }
+
+    .no-sound { background:rgba(255,255,255,.04); border:1px dashed rgba(255,255,255,.15); border-radius:16px; padding:13px 16px; color:rgba(255,255,255,.4); font-size:.82rem; font-weight:600; text-align:center; line-height:1.5; }
+
+    /* NAV */
+    #nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:560px; background:linear-gradient(to top,rgba(15,35,24,.98) 0%,rgba(15,35,24,.7) 80%,transparent 100%); padding:16px 20px 20px; display:flex; align-items:center; justify-content:space-between; opacity:0; pointer-events:none; transition:opacity .3s; z-index:100; }
+    #nav.on { opacity:1; pointer-events:all; }
+    .bnav { background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.2); border-radius:50px; padding:12px 24px; color:white; font-family:'Fredoka One',cursive; font-size:1rem; cursor:pointer; transition:all .2s; min-width:90px; }
+    .bnav:hover { background:rgba(255,255,255,.18); }
+    .bnav:disabled { opacity:.25; cursor:not-allowed; }
+    .bnav.pri { background:linear-gradient(135deg,var(--yellow),var(--orange)); color:#1a0a00; border-color:transparent; box-shadow:0 4px 0 #a33800; }
+    .bnav.pri:hover { transform:translateY(-2px); box-shadow:0 6px 0 #a33800; }
+    .bnav.pri:active { transform:translateY(2px); box-shadow:0 1px 0 #a33800; }
+    .dots { display:flex; gap:8px; align-items:center; }
+    .dot { width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.2); transition:all .3s; cursor:pointer; }
+    .dot.on { background:var(--yellow); transform:scale(1.4); }
+
+    /* HELP */
+    #help { justify-content:flex-start; padding-top:30px; }
+    .helpinner { width:100%; max-width:550px; overflow-y:auto; max-height:calc(100vh - 40px); scrollbar-width:none; padding-bottom:20px; }
+    .helpinner::-webkit-scrollbar { display:none; }
+    .hhero { text-align:center; margin-bottom:20px; }
+    .hemoji { font-size:3.5rem; display:block; animation:bounce 1.5s ease-in-out infinite; }
+    @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+    .htitle { font-family:'Fredoka One',cursive; font-size:clamp(1.8rem,6vw,2.6rem); color:var(--yellow); text-shadow:2px 2px 0 #c45200; margin-bottom:6px; }
+    .hsub { color:rgba(255,255,255,.6); font-size:.95rem; line-height:1.5; }
+    .hlist { display:flex; flex-direction:column; gap:11px; margin-bottom:22px; }
+    .hi { display:flex; gap:14px; align-items:flex-start; background:rgba(255,255,255,.065); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:15px 16px; }
+    .hiico { font-size:2rem; flex-shrink:0; }
+    .hitxt strong { display:block; color:white; font-size:.97rem; font-weight:800; margin-bottom:2px; }
+    .hitxt span { color:rgba(255,255,255,.55); font-size:.82rem; line-height:1.45; }
+    .hfoot { text-align:center; }
+    .btnrs { background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.2); border-radius:50px; padding:13px 32px; color:rgba(255,255,255,.75); font-family:'Fredoka One',cursive; font-size:1rem; cursor:pointer; transition:all .2s; }
+    .btnrs:hover { background:rgba(255,255,255,.15); color:white; }
+    .attr { margin-top:14px; color:rgba(255,255,255,.25); font-size:.68rem; text-align:center; line-height:1.7; }
+  </style>
+</head>
+<body>
+<div id="bar"></div>
+
+<!-- WELCOME -->
+<div class="screen active" id="welcome">
+  <span class="birds">🦜🦜🦜</span>
+  <div class="eyebrow">Toronto Zoo · Interactive Exhibit</div>
+  <h1 class="wtitle">Parrots<br>in Peril</h1>
+  <p class="wsub">Discover 5 incredible parrots from around the world — and why they desperately need YOUR help to survive.</p>
+  <div class="chip">🐾 A BioA02 Science Communication Project · UTSC</div>
+  <button class="btn-start" onclick="start()">Let's Go! →</button>
+</div>
+
+<!-- SPECIES -->
+<div class="screen" id="species">
+  <div class="scroll" id="scrollarea">
+
+    <!-- 0: Blue-throated Macaw -->
+    <div class="card" id="c0">
+      <div class="chead">
+        <div>
+          <div class="spname">Blue-throated Macaw</div>
+          <div class="sciname">Ara glaucogularis</div>
+          <div class="zootag">🌟 Spotted at the Toronto Zoo!</div>
+        </div>
+        <div class="badge crit">Critically<br>Endangered</div>
+      </div>
+      <div class="imgwrap">
+        <img class="simg" src="Blue-Throated_Macaw.jpg" alt="Blue-throated Macaw">
+      </div>
+      <div class="icredit">© Wikimedia Commons / CC BY-SA</div>
+      <div class="factbox">
+        <div class="blabel">🤩 Cool Fact</div>
+        <div class="btext">This bird was thought to be EXTINCT until rediscovered in the wild in 1992! Today, only about 100–150 still survive in Bolivia — fewer than the number of students in most schools.</div>
+      </div>
+      <div class="threat"><div class="ti">⚠️</div><div><div class="tl">Main Threat</div><div class="tt">Cattle ranching is destroying its habitat, and it has been heavily targeted by the illegal pet trade.</div></div></div>
+      <div class="no-sound">🔇 Audio recordings of this species are extremely scarce — fewer than 5 exist worldwide. This is partly a reflection of how rare and inaccessible this bird has become due to illegal trapping and habitat loss.</div>
+    </div>
+
+    <!-- 1: Red-and-green Macaw -->
+    <div class="card" id="c1">
+      <div class="chead">
+        <div>
+          <div class="spname">Red-and-green Macaw</div>
+          <div class="sciname">Ara chloropterus</div>
+          <div class="zootag">🌟 Spotted at the Toronto Zoo!</div>
+        </div>
+        <div class="badge end">Locally<br>Threatened</div>
+      </div>
+
+      <!-- GUESSING GAME -->
+      <div class="guess-wrap">
+        <div class="guess-prompt">🎮 Which one is the REAL macaw? Tap to find out!</div>
+        <div class="guess-row">
+          <div class="guess-opt" id="gReal" onclick="guess(true)">
+            <img src="Red_and_Green_Macaw.jpg" alt="Real macaw photo">
+          </div>
+          <div class="guess-opt" id="gFake" onclick="guess(false)">
+            <img src="Vector_Parrot_I_Made.png" alt="Illustrated macaw">
+          </div>
+        </div>
+        <div class="guess-reveal" id="gReveal"></div>
+      </div>
+
+      <div class="icredit">Photo © Wikimedia Commons / CC BY-SA · Illustration by student artist</div>
+      <div class="factbox">
+        <div class="blabel">🤩 Cool Fact</div>
+        <div class="btext">The LARGEST macaw species in the world — its wingspan can reach up to 125 cm! That's taller than most grade 6 students standing up.</div>
+      </div>
+      <div class="threat"><div class="ti">⚠️</div><div><div class="tl">Main Threat</div><div class="tt">Deforestation across South America is shrinking its habitat, and many are captured for the illegal pet trade.</div></div></div>
+      <button class="btnsnd" id="snd1" onclick="playSound(1)">🔊 Hear the Red-and-green Macaw!</button>
+    </div>
+
+    <!-- 2: Spix's Macaw -->
+    <div class="card" id="c2">
+      <div class="chead">
+        <div>
+          <div class="spname">Spix's Macaw</div>
+          <div class="sciname">Cyanopsitta spixii</div>
+        </div>
+        <div class="badge ext">Extinct<br>in the Wild</div>
+      </div>
+      <div class="imgwrap">
+        <img class="simg" src="Spixs_Macaw.jpg" alt="Spix's Macaw">
+      </div>
+      <div class="icredit">© Wikimedia Commons / CC BY-SA</div>
+      <div class="factbox">
+        <div class="blabel">🤩 Cool Fact</div>
+        <div class="btext">This is the real bird that inspired the movie <em>Rio</em> — and sadly, it is now COMPLETELY GONE from the wild. Only ~180 survive in captivity, and a breeding program is working to bring it back.</div>
+      </div>
+      <div class="threat"><div class="ti">⚠️</div><div><div class="tl">Main Threat</div><div class="tt">The illegal pet trade and deforestation wiped out the entire wild population by 2000.</div></div></div>
+      <div class="no-sound">🔇 Only 3 audio recordings of this species are known to exist — a heartbreaking reminder of how close to total extinction it truly is.</div>
+    </div>
+
+    <!-- 3: Kakapo -->
+    <div class="card" id="c3">
+      <div class="chead">
+        <div>
+          <div class="spname">Kākāpō</div>
+          <div class="sciname">Strigops habroptilus</div>
+        </div>
+        <div class="badge crit">Critically<br>Endangered</div>
+      </div>
+      <div class="imgwrap">
+        <img class="simg" src="Kakapo.jpg" alt="Kakapo">
+      </div>
+      <div class="icredit">© Wikimedia Commons / CC BY-SA</div>
+      <div class="factbox">
+        <div class="blabel">🤩 Cool Fact</div>
+        <div class="btext">The world's only FLIGHTLESS parrot — and it smells like flowers! Only about 250 are alive today, all on three protected predator-free islands in New Zealand.</div>
+      </div>
+      <div class="threat"><div class="ti">⚠️</div><div><div class="tl">Main Threat</div><div class="tt">Invasive predators — rats, cats, and stoats — brought to New Zealand by humans have almost wiped it out entirely.</div></div></div>
+      <button class="btnsnd" id="snd3" onclick="playSound(3)">🔊 Hear the Kākāpō boom!</button>
+    </div>
+
+    <!-- 4: African Grey -->
+    <div class="card" id="c4">
+      <div class="chead">
+        <div>
+          <div class="spname">African Grey Parrot</div>
+          <div class="sciname">Psittacus erithacus</div>
+        </div>
+        <div class="badge end">Endangered</div>
+      </div>
+      <div class="imgwrap">
+        <img class="simg" src="African_Grey.jpg" alt="African Grey Parrot">
+      </div>
+      <div class="icredit">© Wikimedia Commons / CC BY-SA</div>
+      <div class="factbox">
+        <div class="blabel">🤩 Cool Fact</div>
+        <div class="btext">One of the smartest animals on Earth — African Greys can learn hundreds of words, count objects, and even understand the concept of zero! Yet over 1 MILLION have been taken from the wild for the pet trade.</div>
+      </div>
+      <div class="threat"><div class="ti">⚠️</div><div><div class="tl">Main Threat</div><div class="tt">The most heavily trafficked bird on Earth. The illegal pet trade has caused catastrophic population collapse across Central Africa in the past 50 years.</div></div></div>
+      <button class="btnsnd" id="snd4" onclick="playSound(4)">🔊 Hear the African Grey!</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- NAV -->
+<div id="nav">
+  <button class="bnav" id="bBack" onclick="go(-1)" disabled>← Back</button>
+  <div class="dots" id="dots"></div>
+  <button class="bnav pri" id="bNext" onclick="go(1)">Next →</button>
+</div>
+
+<!-- HELP -->
+<div class="screen" id="help">
+  <div class="helpinner">
+    <div class="hhero">
+      <span class="hemoji">💪</span>
+      <h2 class="htitle">How YOU Can Help!</h2>
+      <p class="hsub">Small actions make a HUGE difference for parrots everywhere.</p>
+    </div>
+    <div class="hlist">
+      <div class="hi"><div class="hiico">🚫</div><div class="hitxt"><strong>Never buy wild-caught birds</strong><span>If you want a pet bird, adopt from a rescue or certified breeder — never from someone who caught it in the wild.</span></div></div>
+      <div class="hi"><div class="hiico">🌳</div><div class="hitxt"><strong>Support rainforest protection</strong><span>Tropical forests are parrot homes. Donate to or fundraise for organizations that protect them.</span></div></div>
+      <div class="hi"><div class="hiico">📢</div><div class="hitxt"><strong>Spread the word!</strong><span>Tell your friends and family what you learned today. Awareness leads to action!</span></div></div>
+      <div class="hi"><div class="hiico">♻️</div><div class="hitxt"><strong>Reduce your carbon footprint</strong><span>Climate change worsens habitat loss worldwide. Small changes at home add up globally.</span></div></div>
+      <div class="hi"><div class="hiico">🦜</div><div class="hitxt"><strong>Support the Toronto Zoo</strong><span>This zoo runs real conservation and captive breeding programs for critically endangered species like these.</span></div></div>
+    </div>
+    <div class="hfoot">
+      <button class="btnrs" onclick="restart()">↩ Start Over</button>
+      <div class="attr">
+        Bird sounds: xeno-canto.org (Creative Commons) · Images: Wikimedia Commons (Creative Commons) ·
+        Red-and-green Macaw illustration by student artist · Created for BioA02, UTSC
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const AUDIO = {
+    1: new Audio('XC705998_-_Red-and-green_Macaw_-_Ara_chloropterus.mp3'),
+    3: new Audio('XC295659_-_Kakapo_-_Strigops_habroptila.mp3'),
+    4: new Audio('XC1053186_-_Grey_Parrot_-_Psittacus_erithacus.mp3')
+  };
+
+  let cur = 0, playing = null;
+
+  function setBar(n) { document.getElementById('bar').style.width = (n*100/6)+'%'; }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('nav').classList.toggle('on', id === 'species');
+  }
+
+  function start() { buildDots(); showCard(0); showScreen('species'); setBar(1); }
+
+  function buildDots() {
+    const d = document.getElementById('dots'); d.innerHTML = '';
+    for (let i = 0; i < 5; i++) {
+      const el = document.createElement('div');
+      el.className = 'dot' + (i===0?' on':'');
+      el.id = 'dot'+i;
+      el.onclick = () => { stopAudio(); showCard(i); setBar(i+1); };
+      d.appendChild(el);
+    }
+  }
+
+  function showCard(idx) {
+    document.querySelectorAll('.card').forEach((c,i) => c.classList.toggle('active', i===idx));
+    document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('on', i===idx));
+    document.getElementById('bBack').disabled = idx === 0;
+    document.getElementById('bNext').textContent = idx === 4 ? 'Finish 🎉' : 'Next →';
+    cur = idx;
+    document.getElementById('scrollarea').scrollTop = 0;
+  }
+
+  function go(dir) {
+    stopAudio();
+    if (dir === 1 && cur === 4) { showScreen('help'); setBar(6); return; }
+    const n = cur + dir;
+    if (n >= 0 && n <= 4) { showCard(n); setBar(n+1); }
+  }
+
+  function playSound(idx) {
+    const btn = document.getElementById('snd'+idx);
+    const a = AUDIO[idx];
+    if (playing === idx) {
+      a.pause(); a.currentTime = 0;
+      btn.textContent = ['','🔊 Hear the Red-and-green Macaw!','','🔊 Hear the Kākāpō boom!','🔊 Hear the African Grey!'][idx];
+      btn.classList.remove('playing');
+      playing = null;
+      return;
+    }
+    stopAudio();
+    a.currentTime = 0;
+    a.play();
+    playing = idx;
+    btn.textContent = '⏹ Playing... tap to stop';
+    btn.classList.add('playing');
+    a.onended = () => {
+      btn.textContent = ['','🔊 Hear the Red-and-green Macaw!','','🔊 Hear the Kākāpō boom!','🔊 Hear the African Grey!'][idx];
+      btn.classList.remove('playing');
+      playing = null;
+    };
+  }
+
+  function stopAudio() {
+    if (playing !== null) {
+      const a = AUDIO[playing];
+      a.pause(); a.currentTime = 0;
+      const btn = document.getElementById('snd'+playing);
+      if (btn) {
+        btn.textContent = ['','🔊 Hear the Red-and-green Macaw!','','🔊 Hear the Kākāpō boom!','🔊 Hear the African Grey!'][playing];
+        btn.classList.remove('playing');
+      }
+      playing = null;
+    }
+  }
+
+  // Guessing game
+  function guess(choseReal) {
+    const reveal = document.getElementById('gReveal');
+    const real = document.getElementById('gReal');
+    const fake = document.getElementById('gFake');
+    if (choseReal) {
+      real.classList.add('correct');
+      reveal.className = 'guess-reveal correct';
+      reveal.textContent = '✅ Correct! The photo on the left is the real macaw. The one on the right is a student illustration — pretty close though, right?';
+    } else {
+      fake.classList.add('wrong');
+      real.classList.add('correct');
+      reveal.className = 'guess-reveal wrong';
+      reveal.textContent = "❌ That's the illustration! The real macaw is on the left. But hey — the drawing is pretty impressive!";
+    }
+  }
+
+  function restart() {
+    stopAudio();
+    // reset guessing game
+    document.getElementById('gReal').className = 'guess-opt';
+    document.getElementById('gFake').className = 'guess-opt';
+    document.getElementById('gReveal').className = 'guess-reveal';
+    document.getElementById('gReveal').textContent = '';
+    cur = 0; showCard(0); showScreen('species'); setBar(1);
+  }
+</script>
+</body>
+</html>
